@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"io"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
@@ -55,6 +57,29 @@ func GetFileMetaHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	w.Write(data)
+}
+
+func DownloadFileHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	fileHash := ps.ByName("fileHash")
+	fileMeta := meta.GetFileMeta(fileHash)
+
+	file, err := os.Open(fileMeta.Location)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	fileName := url.QueryEscape(fileMeta.FileName)
+	w.Header().Set("Content-type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+fileName+"\"")
 	w.Write(data)
 }
 
