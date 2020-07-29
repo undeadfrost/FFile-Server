@@ -15,6 +15,10 @@ import (
 	"FFile-Server/util"
 )
 
+type updateBody struct {
+	FileName string
+}
+
 func UploadHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	file, head, err := r.FormFile("file")
 	if err != nil {
@@ -46,6 +50,18 @@ func UploadHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	meta.UpdateFileMeta(fileMeta)
 
 	io.WriteString(w, "Upload finished!")
+}
+
+func GetFilesHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	files := meta.GetFiles()
+	data, err := json.Marshal(files)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
 
 func GetFileMetaHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -80,6 +96,45 @@ func DownloadFileHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	fileName := url.QueryEscape(fileMeta.FileName)
 	w.Header().Set("Content-type", "application/octet-stream")
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+fileName+"\"")
+	w.Write(data)
+}
+
+func DeleteFileHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	fileHash := ps.ByName("fileHash")
+	fileMeta := meta.GetFileMeta(fileHash)
+
+	os.Remove(fileMeta.Location)
+	meta.RemoveFIleMeta(fileHash)
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func UpdateFileHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var updateData = new(updateBody)
+	fileHash := ps.ByName("fileHash")
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = json.Unmarshal(body, &updateData)
+	if err != nil {
+		fmt.Printf("Unmarshal err, %v\n", err)
+		return
+	}
+
+	curFileMeta := meta.GetFileMeta(fileHash)
+	curFileMeta.FileName = updateData.FileName
+	meta.UpdateFileMeta(curFileMeta)
+
+	data, err := json.Marshal(curFileMeta)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }
 

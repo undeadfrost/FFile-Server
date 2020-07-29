@@ -14,9 +14,12 @@ func main() {
 
 	router.GET("/", handler.IndexHandler)
 	router.GET("/user/:name", handler.UserHandler)
-	router.POST("/file", handler.UploadHandler)
+	router.POST("/upload", handler.UploadHandler)
+	router.GET("/file", handler.GetFilesHandler)
 	router.GET("/file/:fileHash", handler.GetFileMetaHandler)
 	router.GET("/download/:fileHash", handler.DownloadFileHandler)
+	router.DELETE("/file/:fileHash", handler.DeleteFileHandler)
+	router.PUT("/file/:fileHash", handler.UpdateFileHandler)
 
 	err := http.ListenAndServe(":8080", router)
 	if err != nil {
