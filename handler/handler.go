@@ -48,6 +48,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 
 	fileMeta.FileSha1 = util.FileSha1(destFile)
 	meta.UpdateFileMeta(fileMeta)
+	meta.UploadFileMetaDB(fileMeta)
 
 	io.WriteString(w, "Upload finished!")
 }

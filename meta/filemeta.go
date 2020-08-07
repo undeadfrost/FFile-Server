@@ -1,5 +1,9 @@
 package meta
 
+import (
+	"FFile-Server/db"
+)
+
 type FileMeta struct {
 	FileSha1 string
 	FileName string
@@ -18,6 +22,9 @@ func UpdateFileMeta(f FileMeta) {
 	fileMetas[f.FileSha1] = f
 }
 
+func UploadFileMetaDB(f FileMeta) {
+	db.OnFileUploadFinished(f.FileSha1, f.FileName, f.FileSize, f.Location)
+}
 func GetFileMeta(fileSha1 string) FileMeta {
 	return fileMetas[fileSha1]
 }

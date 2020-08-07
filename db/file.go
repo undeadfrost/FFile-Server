@@ -7,7 +7,7 @@ import (
 )
 
 func OnFileUploadFinished(fileSha1 string, fileName string, fileSize int64, fileAddr string) bool {
-	stmt, err := mysql.DBConn().Prepare("insert ignore into file-list (`file_sha1`," +
+	stmt, err := mysql.DBConn().Prepare("insert ignore into `file_list` (`file_sha1`," +
 		" `file_name`, `file_size`, `file_addr`, `status`, `create_at`, `update_at`) values (?, ?, ?, ?, 1, ?, ?)")
 
 	if err != nil {
@@ -17,7 +17,7 @@ func OnFileUploadFinished(fileSha1 string, fileName string, fileSize int64, file
 
 	defer stmt.Close()
 
-	createAt := time.Now().Unix()
+	createAt := time.Now()
 	ret, err := stmt.Exec(fileSha1, fileName, fileSize, fileAddr, createAt, createAt)
 	if err != nil {
 		fmt.Printf(err.Error())
