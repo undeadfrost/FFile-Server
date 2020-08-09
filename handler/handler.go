@@ -48,32 +48,37 @@ func UploadHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 
 	fileMeta.FileSha1 = util.FileSha1(destFile)
 	meta.UpdateFileMeta(fileMeta)
-	meta.UploadFileMetaDB(fileMeta)
+	_ = meta.UploadFileMetaDB(fileMeta)
 
 	io.WriteString(w, "Upload finished!")
 }
 
 func GetFilesHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	files := meta.GetFiles()
+	files := meta.GetFilesDB()
 	data, err := json.Marshal(files)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
 
 func GetFileMetaHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	fileHash := ps.ByName("fileHash")
-	fileMeta := meta.GetFileMeta(fileHash)
+	fileMeta, err := meta.GetFileMetaDB(fileHash)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	data, err := json.Marshal(fileMeta)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
 
@@ -135,7 +140,7 @@ func UpdateFileHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
 
