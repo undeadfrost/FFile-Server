@@ -5,10 +5,10 @@ import (
 	"time"
 )
 
-var RedisPool *redis.Pool
+var Pool *redis.Pool
 
 func init() {
-	RedisPool = &redis.Pool{
+	Pool = &redis.Pool{
 		MaxIdle:     100,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redis.Conn, error) {

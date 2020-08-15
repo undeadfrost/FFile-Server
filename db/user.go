@@ -2,6 +2,7 @@ package db
 
 import (
 	mysqlDB "FFile-Server/db/mysql"
+	redisDB "FFile-Server/db/redis"
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -49,5 +50,14 @@ func LoginUser(username string, password string) bool {
 		return true
 	}
 
+	return false
+}
+
+func SaveSession(username string, sessionToken string, second int) bool {
+	redisConn := redisDB.Pool.Get()
+	_, err := redisConn.Do("SETEX", sessionToken, second, username)
+	if err == nil {
+		return true
+	}
 	return false
 }

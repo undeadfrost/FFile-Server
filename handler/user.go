@@ -4,8 +4,10 @@ import (
 	"FFile-Server/db"
 	"encoding/json"
 	"github.com/julienschmidt/httprouter"
+	"github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
+	"time"
 )
 
 type Credentials struct {
@@ -50,11 +52,27 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	isUser := db.LoginUser(creds.Username, creds.Password)
-	if isUser {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Login Success"))
-	} else {
+
+	if !isUser {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Login Failed"))
+		return
 	}
+
+	sessionToken := uuid.NewV4().String()
+	isSession := db.SaveSession(creds.Username, sessionToken, 120)
+
+	if !isSession {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	ck := &http.Cookie{
+		Name:    "session_token",
+		Value:   sessionToken,
+		Expires: time.Now().Add(120 * time.Second),
+	}
+	http.SetCookie(w, ck)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Login Success"))
 }
