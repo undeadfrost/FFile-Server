@@ -25,6 +25,7 @@ func UpdateFileMeta(f FileMeta) {
 func UploadFileMetaDB(f FileMeta) bool {
 	return db.OnFileUploadFinished(f.FileSha1, f.FileName, f.FileSize, f.Location)
 }
+
 func GetFileMeta(fileSha1 string) FileMeta {
 	return fileMetas[fileSha1]
 }

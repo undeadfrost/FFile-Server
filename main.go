@@ -21,6 +21,9 @@ func main() {
 	router.DELETE("/file/:fileHash", handler.DeleteFileHandler)
 	router.PUT("/file/:fileHash", handler.UpdateFileHandler)
 
+	router.POST("/user/signin", handler.SignIn)
+	router.POST("/user/login", handler.Login)
+
 	err := http.ListenAndServe(":8080", router)
 	if err != nil {
 		fmt.Println("Failed to start server error: $s", err.Error())
