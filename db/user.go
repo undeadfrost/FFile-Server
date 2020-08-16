@@ -4,6 +4,7 @@ import (
 	mysqlDB "FFile-Server/db/mysql"
 	redisDB "FFile-Server/db/redis"
 	"fmt"
+	"github.com/gomodule/redigo/redis"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -59,5 +60,19 @@ func SaveSession(username string, sessionToken string, second int) bool {
 	if err == nil {
 		return true
 	}
+	defer redisConn.Close()
+	fmt.Println(err.Error())
 	return false
+}
+
+func AuthSession(sessionToken string) (string, error) {
+	redisConn := redisDB.Pool.Get()
+	value, err := redis.String(redisConn.Do("GET", sessionToken))
+	if err != nil {
+		fmt.Println(err.Error())
+		return "", err
+	}
+	fmt.Println(value)
+	defer redisConn.Close()
+	return value, nil
 }

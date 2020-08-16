@@ -1,19 +1,18 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-
-	"github.com/julienschmidt/httprouter"
-
 	"FFile-Server/handler"
+	"FFile-Server/middleware"
+	"fmt"
+	"github.com/julienschmidt/httprouter"
+	"net/http"
 )
 
 func main() {
 	router := httprouter.New()
 
 	router.GET("/", handler.IndexHandler)
-	router.GET("/user/:name", handler.UserHandler)
+	router.GET("/welcome/:name", handler.UserHandler)
 	router.POST("/upload", handler.UploadHandler)
 	router.GET("/file", handler.GetFilesHandler)
 	router.GET("/file/:fileHash", handler.GetFileMetaHandler)
@@ -23,6 +22,7 @@ func main() {
 
 	router.POST("/user/signin", handler.SignIn)
 	router.POST("/user/login", handler.Login)
+	router.GET("/user/info", middleware.CheckLogin(handler.UserInfo))
 
 	err := http.ListenAndServe(":8080", router)
 	if err != nil {

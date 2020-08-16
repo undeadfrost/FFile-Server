@@ -2,6 +2,7 @@ package handler
 
 import (
 	"FFile-Server/db"
+	"FFile-Server/util"
 	"encoding/json"
 	"github.com/julienschmidt/httprouter"
 	"github.com/satori/go.uuid"
@@ -60,7 +61,7 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	sessionToken := uuid.NewV4().String()
-	isSession := db.SaveSession(creds.Username, sessionToken, 120)
+	isSession := db.SaveSession(creds.Username, sessionToken, 600)
 
 	if !isSession {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -68,11 +69,23 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	ck := &http.Cookie{
-		Name:    "session_token",
-		Value:   sessionToken,
-		Expires: time.Now().Add(120 * time.Second),
+		Name:     "session_token",
+		Value:    sessionToken,
+		Path:     "/",
+		HttpOnly: true,
+		Expires:  time.Now().Add(600 * time.Second),
 	}
+
 	http.SetCookie(w, ck)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Login Success"))
+}
+
+func UserInfo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	username, _ := r.Context().Value("username").(string)
+	rawRep := util.AjaxReturn(0, "Success", map[string]string{"username": username})
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(rawRep.JsonBytes())
 }
