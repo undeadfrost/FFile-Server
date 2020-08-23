@@ -10,7 +10,7 @@ import (
 var DB *sql.DB
 
 func init() {
-	DB, _ = sql.Open("mysql", "root:libo1121X@tcp(127.0.0.1:3306)/f-file?charset=utf8mb4&parseTime=true&loc=Local")
+	DB, _ = sql.Open("mysql", "root:libo1121X@tcp(114.215.146.129:3306)/f-file?charset=utf8mb4&parseTime=true&loc=Local")
 	DB.SetConnMaxLifetime(10)
 	if err := DB.Ping(); err != nil {
 		fmt.Println("open database fail", err)
