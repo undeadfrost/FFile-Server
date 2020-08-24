@@ -1,15 +1,15 @@
-package db
+package cache
 
 import (
-	mysqlDB "FFile-Server/db/mysql"
-	redisDB "FFile-Server/db/redis"
+	cache "FFile-Server/cache/redis"
+	db "FFile-Server/db/mysql"
 	"fmt"
 	"github.com/gomodule/redigo/redis"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func CreateUser(username string, password string) bool {
-	stmt, err := mysqlDB.DBConn().Prepare("insert ignore into " +
+	stmt, err := db.DBConn().Prepare("insert ignore into " +
 		"`user`(`username`, `password`) values (?, ?)")
 	if err != nil {
 		fmt.Println(err.Error())
@@ -32,7 +32,7 @@ func CreateUser(username string, password string) bool {
 }
 
 func LoginUser(username string, password string) bool {
-	stmt, err := mysqlDB.DBConn().Prepare("select password from `user`" +
+	stmt, err := db.DBConn().Prepare("select password from `user`" +
 		" where username=?")
 	if err != nil {
 		fmt.Println(err.Error())
@@ -55,7 +55,7 @@ func LoginUser(username string, password string) bool {
 }
 
 func SaveSession(username string, sessionToken string, second int) bool {
-	redisConn := redisDB.Pool.Get()
+	redisConn := cache.Pool.Get()
 	_, err := redisConn.Do("SETEX", sessionToken, second, username)
 	if err == nil {
 		return true
@@ -66,7 +66,7 @@ func SaveSession(username string, sessionToken string, second int) bool {
 }
 
 func AuthSession(sessionToken string) (string, error) {
-	redisConn := redisDB.Pool.Get()
+	redisConn := cache.Pool.Get()
 	value, err := redis.String(redisConn.Do("GET", sessionToken))
 	if err != nil {
 		fmt.Println(err.Error())

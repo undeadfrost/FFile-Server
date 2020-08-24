@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"FFile-Server/db"
+	"FFile-Server/cache"
 	"context"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
@@ -16,7 +16,7 @@ func CheckLogin(next httprouter.Handle) httprouter.Handle {
 			return
 		}
 
-		username, err := db.AuthSession(cookie.Value)
+		username, err := cache.AuthSession(cookie.Value)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Not Login"))

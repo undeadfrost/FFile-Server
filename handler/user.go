@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"FFile-Server/db"
+	"FFile-Server/cache"
 	"FFile-Server/util"
 	"encoding/json"
 	"github.com/julienschmidt/httprouter"
@@ -35,7 +35,7 @@ func SignIn(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	suc := db.CreateUser(creds.Username, string(hashPassword))
+	suc := cache.CreateUser(creds.Username, string(hashPassword))
 	if suc {
 		w.Write([]byte("Success"))
 	} else {
@@ -52,7 +52,7 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	isUser := db.LoginUser(creds.Username, creds.Password)
+	isUser := cache.LoginUser(creds.Username, creds.Password)
 
 	if !isUser {
 		w.WriteHeader(http.StatusBadRequest)
@@ -61,7 +61,7 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	sessionToken := uuid.NewV4().String()
-	isSession := db.SaveSession(creds.Username, sessionToken, 600)
+	isSession := cache.SaveSession(creds.Username, sessionToken, 600)
 
 	if !isSession {
 		w.WriteHeader(http.StatusInternalServerError)
