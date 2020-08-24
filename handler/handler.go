@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"FFile-Server/db"
 	"encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
@@ -50,7 +51,13 @@ func UploadHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	meta.UpdateFileMeta(fileMeta)
 	_ = meta.UploadFileMetaDB(fileMeta)
 
-	io.WriteString(w, "Upload finished!")
+	username := r.Context().Value("username").(string)
+	suc := db.OnUserUploadFinished(username, fileMeta.FileSha1, fileMeta.FileName, fileMeta.FileSize)
+	if suc {
+		io.WriteString(w, "Upload Finished!")
+	} else {
+		io.WriteString(w, "Upload Failed")
+	}
 }
 
 func GetFilesHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

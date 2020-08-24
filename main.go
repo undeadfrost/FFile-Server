@@ -13,7 +13,7 @@ func main() {
 
 	router.GET("/", handler.IndexHandler)
 	router.GET("/welcome/:name", handler.UserHandler)
-	router.POST("/upload", handler.UploadHandler)
+	router.POST("/upload", middleware.CheckLogin(handler.UploadHandler))
 	router.GET("/file", handler.GetFilesHandler)
 	router.GET("/file/:fileHash", handler.GetFileMetaHandler)
 	router.GET("/download/:fileHash", handler.DownloadFileHandler)
