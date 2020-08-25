@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"time"
 
 	"FFile-Server/meta"
@@ -47,6 +48,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		return
 	}
 
+	destFile.Seek(0, 0)
+
 	fileMeta.FileSha1 = util.FileSha1(destFile)
 	meta.UpdateFileMeta(fileMeta)
 	_ = meta.UploadFileMetaDB(fileMeta)
@@ -61,15 +64,26 @@ func UploadHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 }
 
 func GetFilesHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	files := meta.GetFilesDB()
-	data, err := json.Marshal(files)
+	username := r.Context().Value("username").(string)
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	userFiles, err := db.QueryUserFileMetas(username, limit)
+	// files := meta.GetFilesDB()
+	// data, err := json.Marshal(files)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	rawRep := util.AjaxReturn(0, "success", userFiles)
+
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+	w.WriteHeader(http.StatusOK)
+	w.Write(rawRep.JsonBytes())
 }
 
 func GetFileMetaHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
