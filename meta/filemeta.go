@@ -30,10 +30,10 @@ func GetFileMeta(fileSha1 string) FileMeta {
 	return fileMetas[fileSha1]
 }
 
-func GetFileMetaDB(fileSha1 string) (FileMeta, error) {
+func GetFileMetaDB(fileSha1 string) (*FileMeta, error) {
 	tableFile, err := db.GetFileMeta(fileSha1)
 	if err != nil {
-		return FileMeta{}, err
+		return nil, err
 	}
 
 	fileMeta := FileMeta{
@@ -44,7 +44,7 @@ func GetFileMetaDB(fileSha1 string) (FileMeta, error) {
 		UploadAt: tableFile.FileUpdateAt.Time.Format("2006-01-02 15:04:05"),
 	}
 
-	return fileMeta, nil
+	return &fileMeta, nil
 }
 
 func RemoveFIleMeta(fileSha1 string) {

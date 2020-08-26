@@ -19,6 +19,7 @@ func main() {
 	router.GET("/download/:fileHash", handler.DownloadFileHandler)
 	router.DELETE("/file/:fileHash", handler.DeleteFileHandler)
 	router.PUT("/file/:fileHash", handler.UpdateFileHandler)
+	router.POST("/file/fast", middleware.CheckLogin(handler.TryFastUploadHandler))
 
 	router.POST("/user/signin", handler.SignIn)
 	router.POST("/user/login", handler.Login)

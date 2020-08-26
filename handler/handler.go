@@ -21,6 +21,11 @@ type updateBody struct {
 	FileName string
 }
 
+type tryFastBody struct {
+	FileHash string `json:"fileHash"`
+	FileName string `json:"fileName"`
+}
+
 func UploadHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	file, head, err := r.FormFile("file")
 	if err != nil {
@@ -60,6 +65,46 @@ func UploadHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		io.WriteString(w, "Upload Finished!")
 	} else {
 		io.WriteString(w, "Upload Failed")
+	}
+}
+
+func TryFastUploadHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// 1.获取参数
+	var tryFastBody = tryFastBody{}
+	username := r.Context().Value("username").(string)
+	err := json.NewDecoder(r.Body).Decode(&tryFastBody)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// 2.查询文件是否已经存在
+	tableFile, err := meta.GetFileMetaDB(tryFastBody.FileHash)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// 3.文件不存在无法秒传
+	if tableFile == nil {
+		w.Header().Set("Content-type", "application/json")
+		rawRep := util.AjaxReturn(0, "success", nil)
+		w.Write(rawRep.JsonBytes())
+		return
+	}
+
+	// 4.查询用户表是否存在相同文件
+	// 4.写入用户表
+	suc := db.OnUserUploadFinished(username, tryFastBody.FileHash, tryFastBody.FileName, tableFile.FileSize)
+
+	w.Header().Set("Content-type", "application/json")
+
+	if suc {
+		rawRep := util.AjaxReturn(0, "success", nil)
+		w.Write(rawRep.JsonBytes())
+	} else {
+		rawRep := util.AjaxReturn(-1, "Failed", nil)
+		w.Write(rawRep.JsonBytes())
 	}
 }
 

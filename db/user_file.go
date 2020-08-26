@@ -32,7 +32,6 @@ func OnUserUploadFinished(username, fileSha1, fileName string, fileSize int64) b
 		return true
 	}
 
-	fmt.Println(err.Error())
 	return false
 }
 
@@ -60,4 +59,25 @@ func QueryUserFileMetas(username string, limit int) ([]UserFile, error) {
 	}
 
 	return userFiles, nil
+}
+
+func FileExist(username string, fileHash string, fileName string) (status bool, err error) {
+	stmt, err := db.DBConn().Prepare("select file_sha1 from `user_file` where username = ? and file_sha1 = ? and file_name = ?")
+	if err != nil {
+		fmt.Println(err.Error())
+		return false, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(username, fileHash, fileName)
+	if err != nil {
+		return false, err
+	}
+
+	cols, err := rows.Columns()
+	if err != nil {
+		return false, err
+	}
+
+	return len(cols) > 0, nil
 }

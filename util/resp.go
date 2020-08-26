@@ -12,8 +12,8 @@ type Response struct {
 	Data    interface{} `json:"data"`
 }
 
-func AjaxReturn(code int, message string, data interface{}) *Response {
-	return &Response{
+func AjaxReturn(code int, message string, data interface{}) Response {
+	return Response{
 		Code:    code,
 		Message: message,
 		Data:    data,
