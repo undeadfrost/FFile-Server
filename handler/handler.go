@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"FFile-Server/meta"
@@ -94,7 +96,18 @@ func TryFastUploadHandler(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	}
 
 	// 4.查询用户表是否存在相同文件
-	// 4.写入用户表
+	isExist, err := db.FileExist(username, tryFastBody.FileHash, tryFastBody.FileName)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	if isExist {
+		fileExt := path.Ext(tryFastBody.FileName)
+		index := strings.LastIndex(tryFastBody.FileName, fileExt)
+		timeNow := time.Now().Unix()
+		tryFastBody.FileName = tryFastBody.FileName[:index] + strconv.FormatInt(timeNow, 10) + tryFastBody.FileName[index:]
+	}
+	// 5.写入用户表
 	suc := db.OnUserUploadFinished(username, tryFastBody.FileHash, tryFastBody.FileName, tableFile.FileSize)
 
 	w.Header().Set("Content-type", "application/json")
