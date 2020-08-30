@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
+	"github.com/satori/go.uuid"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -29,6 +30,26 @@ type tryFastBody struct {
 }
 
 func UploadHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// 1.创建文件上传目录
+	folder := "./upload/" + time.Now().Format("20060102")
+	isFolder, _ := util.PathExists(folder)
+	if !isFolder {
+		if err := os.MkdirAll(folder, 777); err != nil {
+			fmt.Println(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// 2.创建文件,保存文件不带后缀名
+	fn := folder + "/" + uuid.NewV4().String()
+	fnTmp, err := os.OpenFile(fn, os.O_RDWR|os.O_CREATE, 777)
+	if err != nil {
+		fmt.Println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	file, head, err := r.FormFile("file")
 	if err != nil {
 		fmt.Printf("error: %s", err.Error())
@@ -36,31 +57,43 @@ func UploadHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	}
 	defer file.Close()
 
+	fileSize, err := io.Copy(fnTmp, file)
+	if err != nil {
+		fmt.Println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	fileMeta := meta.FileMeta{
 		FileName: head.Filename,
-		Location: "./upload/" + head.Filename,
+		FileSize: fileSize,
+		Location: fn,
 		UploadAt: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
-	destFile, err := os.Create(fileMeta.Location)
+	// 3.上传文件已存在则删除本次上传
+	fp, _ := os.Open(fn)
+	fileMeta.FileSha1 = util.FileSha1(fp)
+	uploadSuc, err := db.OnFileUploadFinished(fileMeta.FileSha1, fileMeta.FileName, fileMeta.FileSize, fileMeta.Location)
 	if err != nil {
-		fmt.Printf("error: %s", err.Error())
-		return
-	}
-	defer destFile.Close()
-
-	fileMeta.FileSize, err = io.Copy(destFile, file)
-	if err != nil {
-		fmt.Printf("error: %s", err.Error())
+		fmt.Println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	destFile.Seek(0, 0)
+	defer func() {
+		_ = fp.Close()
+		_ = fnTmp.Close()
+		if !uploadSuc {
+			fmt.Println("Delete File", fn)
+			err = os.Remove(fn)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+		}
+	}()
 
-	fileMeta.FileSha1 = util.FileSha1(destFile)
-	meta.UpdateFileMeta(fileMeta)
-	_ = meta.UploadFileMetaDB(fileMeta)
-
+	// 4.保存文件到用户表
 	username := r.Context().Value("username").(string)
 	suc := db.OnUserUploadFinished(username, fileMeta.FileSha1, fileMeta.FileName, fileMeta.FileSize)
 	if suc {

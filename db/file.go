@@ -15,13 +15,13 @@ type TableFile struct {
 	FileUpdateAt sql.NullTime
 }
 
-func OnFileUploadFinished(fileSha1 string, fileName string, fileSize int64, fileAddr string) bool {
+func OnFileUploadFinished(fileSha1 string, fileName string, fileSize int64, fileAddr string) (bool, error) {
 	stmt, err := mysql.DBConn().Prepare("insert ignore into `file_list` (`file_sha1`," +
 		" `file_name`, `file_size`, `file_addr`, `status`, `create_at`, `update_at`) values (?, ?, ?, ?, 1, ?, ?)")
 
 	if err != nil {
 		fmt.Println("Failed to prepare statement, err: " + err.Error())
-		return false
+		return false, err
 	}
 
 	defer stmt.Close()
@@ -30,17 +30,19 @@ func OnFileUploadFinished(fileSha1 string, fileName string, fileSize int64, file
 	ret, err := stmt.Exec(fileSha1, fileName, fileSize, fileAddr, createAt, createAt)
 	if err != nil {
 		fmt.Printf(err.Error())
-		return false
+		return false, err
 	}
 
 	if rf, err := ret.RowsAffected(); err == nil {
-		if rf < 0 {
+		if rf > 0 {
 			fmt.Printf("File with hash:%s has be upload before", fileName)
-			return true
+			return true, nil
+		} else {
+			return false, nil
 		}
+	} else {
+		return false, err
 	}
-
-	return false
 }
 
 func GetFileMeta(fileHash string) (*TableFile, error) {
